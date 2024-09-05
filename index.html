@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Pattern Prediction Project</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            background: url('C:\Users\ASUS\Downloads\red-traffic-light-flat-illustration_1284-22959.jpg') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        .card {
+            padding: 20px;
+            width: 650px;
+            height: 650px;
+            border-radius: 20px;
+            background: rgba(33, 33, 33, 0.8);
+            box-shadow: 5px 5px 8px #1b1b1b, -5px -5px 8px #272727;
+            transition: 0.4s;
+            position: relative;
+        }
+
+        .card:hover {
+            translate: 0 -10px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #b2eccf;
+            margin: 15px 0 0 10px;
+        }
+
+        .card-image {
+            min-height: 170px;
+            background-color: #313131;
+            border-radius: 15px;
+            background: #313131;
+            box-shadow: inset 5px 5px 3px #2f2f2f, inset -5px -5px 3px #333333;
+        }
+
+        .card-body {
+            margin: 13px 0 0 10px;
+            color: rgb(184, 184, 184);
+            font-size: 15px;
+        }
+
+        .footer {
+            float: right;
+            margin: 28px 0 0 18px;
+            font-size: 13px;
+            color: #b3b3b3;
+        }
+
+        .by-name {
+            font-weight: 700;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .input {
+            color: #fff;
+            font-size: 0.9rem;
+            background-color: transparent;
+            width: 60%;
+            box-sizing: border-box;
+            padding-inline: 0.5em;
+            padding-block: 0.7em;
+            border: none;
+            border-bottom: var(--border-height) solid var(--border-before-color);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-border {
+            position: absolute;
+            background: var(--border-after-color);
+            width: 0%;
+            height: 3px;
+            bottom: 0;
+            left: 0;
+            transition: width 0.3s cubic-bezier(0.6, -0.28, 0.735, 0.045);
+        }
+
+        .input:focus {
+            outline: none;
+        }
+
+        .input:focus + .input-border {
+            width: 60%;
+        }
+
+        .form-control {
+            position: absolute;
+            bottom: 60px;
+            left: 10px;
+            right: 50px;
+            width: calc(100% - 20px);
+        }
+
+        .input-alt {
+            font-size: 0.8rem;
+            padding-inline: 1em;
+            padding-block: 0.8em;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-border-alt {
+            height: 3px;
+            background: linear-gradient(90deg, #FF6464 0%, #FFBF59 50%, #47C9FF 100%);
+            transition: width 0.4s cubic-bezier(0.42, 0, 0.58, 1.00);
+        }
+
+        .input-alt:focus + .input-border-alt {
+            width: 60%;
+        }
+
+        button {
+            width: 5em;
+            height: 2em;
+            border-radius: 30em;
+            font-size: 15px;
+            font-family: inherit;
+            border: none;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            box-shadow: 6px 6px 12px #212121,
+                        -6px -6px 12px black;
+        }
+
+        button::before {
+            content: '';
+            width: 0;
+            height: 2em;
+            border-radius: 30em;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-image: linear-gradient(to right, darkblue 0%, lightblue 100%);
+            transition: .5s ease;
+            display: block;
+            z-index: -1;
+        }
+
+        button:hover::before {
+            width: 5em;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="card-image">
+            <img src="C:\Users\ASUS\OneDrive\Documents\Projects\IBM Internship\IBM Project\.venv\darius_ai_normal.gif" alt="AI image">
+        </div>
+        <p class="card-title">Traffic Pattern Prediction Project</p>
+        <p class="card-body">AI Model: Advanced Virtual Traffic Intelligence (AVTI)</p>
+        <p class="card-body">Serial Number: AVTI-TR3FF1C</p>
+        <p class="card-body">
+            In recent years, the rapid growth of urban areas has led to increased traffic congestion, necessitating the development of advanced solutions to monitor and manage traffic flow efficiently. Traditional methods of traffic monitoring, such as manual counting and fixed sensors, are often limited in scope and accuracy. To address these challenges, this project leverages deep learning techniques to analyze traffic patterns from visual data, providing a more dynamic and accurate assessment of traffic conditions.
+
+            The primary goal of this project is to create a robust and efficient system that can classify and predict traffic patterns from both images and videos. By employing state-of-the-art deep learning models, we aim to provide real-time insights into traffic conditions, which can be utilized by urban planners, traffic management authorities, and autonomous vehicles.
+        </p>
+        <p class="footer">Created By <span class="by-name">Shaurya Shrivastava</span> in <span class="date">2024</span></p>
+        <div class="form-control">
+            <input class="input input-alt" placeholder="Type Review..." required="" type="text">
+            <span class="input-border input-border-alt"></span>
+            <button> Send! </button>
+            <br><br><br>
+            <button onclick="openFile()"> Open! </button>
+            <br>
+        </div>
+    </div>
+   <script>
+        function openFile() {
+            fetch('/open-file', { method: 'POST' });
+        }
+    </script>
+</body>
+</html>
