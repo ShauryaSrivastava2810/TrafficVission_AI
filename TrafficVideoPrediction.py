@@ -48,6 +48,6 @@ class TrafficVideoPrediction:
 
         cap.release()
 
-        # Convert predictions to 'Traffic' or 'No Traffic' based on threshold (0.5 in this case)
-        prediction_labels = ['Traffic' if pred > 0.5 else 'No Traffic' for pred in predictions]
+        # Convert predictions to 'Traffic' or 'No Traffic' based on threshold (0.8 in this case)
+        prediction_labels = ['Traffic' if pred >= 0.8 else 'No Traffic' for pred in predictions]
         return prediction_labels
