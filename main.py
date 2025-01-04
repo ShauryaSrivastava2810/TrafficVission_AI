@@ -1,6 +1,6 @@
 from TrafficImagePrediction import TrafficImagePrediction as tip
 from TrafficVideoPrediction import TrafficVideoPrediction as tvp
-
+import numpy as np
 from customtkinter import CTk, CTkFrame, CTkLabel, CTkEntry, CTkButton, CTkComboBox, filedialog, CTkInputDialog
 from PIL import Image, ImageTk
 import imageio
@@ -13,7 +13,7 @@ from CTkDataVisualizingWidgets import *
 MEDIA = "image"
 stop_video_flag = False
 
-def _body_(MEDIA, file_path):
+def body(MEDIA, file_path):
     media = MEDIA
 
     if media.lower() == "image":
@@ -22,7 +22,7 @@ def _body_(MEDIA, file_path):
         handle_video(file_path)
 
 def handle_image(image_path):
-    model_path = 'image_classification_model.keras'
+    model_path = 'traffic_image_classification_model.h5'
     traffic_predictor = tip(model_path)
     result = traffic_predictor.predict_image(image_path)
     bottom_frame.configure(text=f'The image is classified as: {result}')
@@ -30,7 +30,7 @@ def handle_image(image_path):
 def handle_video(video_path):
     count = 0
     ncount = 0
-    model_path = 'video_classification_model.keras'
+    model_path = 'D:\Projects\IBM Internship\IBM Project\.venv/video_classification_model_2.keras'
     traffic_video_predictor = tvp(model_path= model_path)
     results = traffic_video_predictor.predict_video(video_path)
     for result in results:
@@ -65,15 +65,26 @@ def graphframepop(video_path):
               command=lambda: graphframedestroy(framegraph)).place(x=screen_width - 200, y=150)
     threading.Thread(target=graphframe, args=(framegraph, video_path)).start()
 
+
+import cv2
+import numpy as np
+
+
 def graphframe(window, video_path):
-    haar_cascade = 'haarcascade_car.xml'
+    # Load YOLO model
+    net = cv2.dnn.readNet("yolov3.weights", "yolov3 (2).cfg")  # Make sure to replace with your YOLO model files
+    layer_names = net.getLayerNames()
+    output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
+
+    # Set up video capture
     cap = cv2.VideoCapture(video_path)
-    car_cascade = cv2.CascadeClassifier(haar_cascade)
-    fps = cap.get(cv2.CAP_PROP_FPS)
+    fps = int(cap.get(cv2.CAP_PROP_FPS))  # Frames per second from video
+    frames_per_interval = fps  # Number of frames in each time interval (1 second = fps frames)
 
-    choice = CTkInputDialog(text="1. Per second\n2. Per minute\n3. Per hour   \nType in number:",
-                            title="Select the time interval for counting cars:")
+    choice = CTkInputDialog(text="1. Per second\n2. Per minute\n3. Per hour\nType in number:",
+                            title="Select the time interval for averaging vehicles:")
 
+    # Set the time interval and unit for graph display
     if choice.get_input() == '1':
         time_interval = 1
         time_unit = "sec"
@@ -88,38 +99,72 @@ def graphframe(window, video_path):
         time_interval = 1
         time_unit = "sec"
 
-    car_count_dict = collections.defaultdict(int)
+    vehicle_count_dict = collections.defaultdict(list)  # Store vehicle counts for averaging
     start_time = time.time()
 
     while True:
-        ret, frames = cap.read()
+        ret, frame = cap.read()
         if not ret:
             break
 
-        gray = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
-        cars = car_cascade.detectMultiScale(gray, 1.1, 1)
+        # Prepare the image for YOLO detection
+        blob = cv2.dnn.blobFromImage(frame, 0.00392, (416, 416), (0, 0, 0), True, crop=False)
+        net.setInput(blob)
+        outs = net.forward(output_layers)
+
+        class_ids = []
+        confidences = []
+        boxes = []
+        vehicle_count = 0
+
+        # Iterate through the detections
+        for out in outs:
+            for detection in out:
+                scores = detection[5:]
+                class_id = np.argmax(scores)
+                confidence = scores[class_id]
+                if confidence > 0.5:  # Adjust the confidence threshold as needed
+                    # Vehicle class IDs in COCO dataset (range from 2 to 7 for vehicle-related classes)
+                    if class_id in [2, 3, 5, 7]:  # 2: car, 3: motorcycle, 5: bus, 7: truck
+                        vehicle_count += 1
+                        center_x = int(detection[0] * frame.shape[1])
+                        center_y = int(detection[1] * frame.shape[0])
+                        w = int(detection[2] * frame.shape[1])
+                        h = int(detection[3] * frame.shape[0])
+
+                        # Draw rectangle around detected vehicle
+                        cv2.rectangle(frame, (center_x - w // 2, center_y - h // 2),
+                                      (center_x + w // 2, center_y + h // 2), (0, 0, 255), 2)
+
         current_time = time.time()
         elapsed_time = current_time - start_time
         interval = int(elapsed_time // time_interval)
+        vehicle_count_dict[interval].append(vehicle_count)  # Append vehicle count for the current frame
 
-        car_count_dict[interval] += len(cars)
+        # Show the frame with detected vehicles
+        cv2.imshow('video', frame)
 
-        for (x, y, w, h) in cars:
-            cv2.rectangle(frames, (x, y), (x + w, y + h), (0, 0, 255), 2)
-
-        cv2.imshow('video', frames)
-
-        if cv2.waitKey(33) == 27:
+        if cv2.waitKey(33) == 27:  # Exit if 'ESC' is pressed
             break
 
     cv2.destroyAllWindows()
-    car_count_dict_formatted = {f"{interval}": count for interval, count in sorted(car_count_dict.items())}
-    car_count_list = [count for interval, count in sorted(car_count_dict.items())]
 
-    CTkChart(window, car_count_dict_formatted, corner_radius=20, chart_axis_width=3, width=1500, height=300).place(x=10, y=500)
-    CTkGraph(window, car_count_list, width=550, height=400, fg_color="#FF7761", graph_color="#FF7761",
-             graph_fg_color="#FF5330", title=f"Number of vehicles per {time_unit}", title_font_size=30,
+    # Calculate average vehicle count per interval
+    avg_vehicle_count_dict = {
+        f"{interval}": sum(vehicle_counts) / len(vehicle_counts) if vehicle_counts else 0
+        for interval, vehicle_counts in sorted(vehicle_count_dict.items())
+    }
+
+    # Prepare data for graph
+    avg_vehicle_count_list = [avg_count for interval, avg_count in sorted(avg_vehicle_count_dict.items())]
+
+    # Create chart widgets for average vehicle counts
+    CTkChart(window, avg_vehicle_count_dict, corner_radius=20, chart_axis_width=3, width=1500, height=300).place(x=10,
+                                                                                                                 y=500)
+    CTkGraph(window, avg_vehicle_count_list, width=550, height=400, fg_color="#FF7761", graph_color="#FF7761",
+             graph_fg_color="#FF5330", title_font_size=30,
              corner_radius=20).place(x=10, y=30)
+
 
 def combobox_callback(e):
     global MEDIA
@@ -181,14 +226,14 @@ def on_submit():
     global stop_video_flag
     stop_video_flag = True  # Stop any ongoing video playback
     file_path = file_path_entry.get()
-    bottom_frame.configure(text="Processing...")
+    bottom_frame.configure(text="Processing...", text_color="black")
     label.configure(image='', text='')  # Clear the previous content
     if MEDIA == "video":
         stop_video_flag = False
         threading.Thread(target=play_video, args=(file_path, label, root)).start()
     else:
         threading.Thread(target=display_image, args=(file_path, label)).start()
-    threading.Thread(target=_body_, args=(MEDIA, file_path)).start()
+    threading.Thread(target=body, args=(MEDIA, file_path)).start()
 
 def set_background_image(root, image_path):
     # Create a frame for the background image
@@ -230,15 +275,15 @@ if __name__ == "__main__":
     entry_list_frame = CTkFrame(master=frame, width=500, height=700, bg_color="white", fg_color="white")
     entry_list_frame.pack(side="left", padx=100, pady=10)
 
-    entry_label = CTkLabel(master=entry_list_frame, text="Traffic Predictor Entries", font=("Arial", 20))
+    entry_label = CTkLabel(master=entry_list_frame, text="Traffic Predictor Entries", font=("Arial", 20), text_color="black")
     entry_label.place(x=1, y=10)
 
-    file_type = CTkComboBox(master=entry_list_frame, values=["Image", "Video"], button_color="#0504AA",
-                            fg_color="white", bg_color="white", border_color="#0504AA", dropdown_fg_color="white",
+    file_type = CTkComboBox(master=entry_list_frame, values=["Image", "Video"], button_color="#0504AA", text_color="black",
+                            fg_color="white", bg_color="black", border_color="#0504AA", dropdown_fg_color="black",
                             dropdown_hover_color="#353839", hover=0, command=combobox_callback)
     file_type.place(x=1, y=50)
 
-    file_path_entry = CTkEntry(master=entry_list_frame, width=410, fg_color="white", border_width=1,
+    file_path_entry = CTkEntry(master=entry_list_frame, width=410, fg_color="white", border_width=1, text_color="black",
                                placeholder_text="Select the file")
     file_path_entry.place(x=1, y=90)
 
@@ -247,7 +292,7 @@ if __name__ == "__main__":
     file_path_button.place(x=420, y=90)
     file_path_button.configure(command=open_file_dialog)
 
-    label = CTkLabel(master=frame, width=800, height=600, fg_color="white", bg_color="white", text="")
+    label = CTkLabel(master=frame, width=800, height=600, fg_color="white", bg_color="black", text="")
     label.pack(side="right", padx=100, pady=10)
     label.propagate(False)
 
